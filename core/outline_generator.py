@@ -59,6 +59,8 @@ class OutlineGenerator:
             "Business": "business",
             "Academic": "academic",
             "Creative": "creative",
+            "Tech": "tech",
+            "Vibrant": "vibrant",
         }.get(style, "business")
         presentation = Presentation(
             title=topic,
@@ -90,6 +92,7 @@ class OutlineGenerator:
         if ref_items:
             presentation.add_slide(
                 Slide(
+                    page=len(presentation.slides) + 1,
                     title="参考文献" if language == "zh" else "References",
                     points=ref_items,
                     detail="",

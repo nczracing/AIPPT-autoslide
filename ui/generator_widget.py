@@ -5,8 +5,10 @@ from settings_module import get_settings, Presentation
 from core.outline_generator import OutlineGenerator
 from core.image_generator import ImageGenerator
 from core.pptx_builder import PPTXBuilder
+from core.doc_parser import parse_reference_file
 import logging
 import time
+from pathlib import Path
 
 # 设置模块级日志
 logger = logging.getLogger(__name__)
@@ -176,6 +178,8 @@ class GeneratorWidget(QWidget):
         self.style_combo.addItem('💼 商务 (Business)', 'Business')
         self.style_combo.addItem('📚 学术 (Academic)', 'Academic')
         self.style_combo.addItem('✨ 创意 (Creative)', 'Creative')
+        self.style_combo.addItem('🔧 科技 (Tech)', 'Tech')
+        self.style_combo.addItem('🔥 活力 (Vibrant)', 'Vibrant')
         style_layout.addWidget(self.style_combo)
         style_layout.addStretch()
         layout.addLayout(style_layout)
@@ -209,10 +213,24 @@ class GeneratorWidget(QWidget):
         ctx_label = QLabel('💡 参考材料 (Reference Materials, 选填)')
         ctx_label.setObjectName('fieldLabel')
         layout.addWidget(ctx_label)
+
+        # 上传参考文件按钮（PDF / MD）
+        upload_layout = QHBoxLayout()
+        self.upload_btn = QPushButton('📎 上传参考文件 (PDF / MD)')
+        self.upload_btn.setObjectName('secondaryBtn')
+        self.upload_btn.setCursor(self.cursor())
+        self.upload_btn.clicked.connect(self.upload_reference_files)
+        upload_layout.addWidget(self.upload_btn)
+        self.uploaded_label = QLabel('')
+        self.uploaded_label.setObjectName('uploadedHint')
+        self.uploaded_label.setWordWrap(True)
+        upload_layout.addWidget(self.uploaded_label, 1)
+        layout.addLayout(upload_layout)
+
         self.context_input = QTextEdit()
         self.context_input.setPlaceholderText(
             '在此粘贴背景材料以帮助理解内容，例如：要点、数据、资料片段、希望强调的内容等\n'
-            '（自由文本，非必填，最长约 4000 字）。\n'
+            '（自由文本，非必填，最长约 4000 字）。也可点击上方按钮上传 PDF/MD 文件自动填入。\n'
             'AI 会参考这些材料来丰富正文内容，但不会自动追加额外页面。'
         )
         self.context_input.setFixedHeight(90)
@@ -263,6 +281,42 @@ class GeneratorWidget(QWidget):
         preview_btn.clicked.connect(self.show_preview)
         btn_layout.addWidget(preview_btn)
         layout.addLayout(btn_layout)
+
+    def upload_reference_files(self):
+        """选择并解析参考文件（PDF/MD），解析结果追加到参考材料输入框。"""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            '选择参考文件 (PDF / MD)',
+            '',
+            '参考文件 (*.pdf *.md *.markdown);;PDF (*.pdf);;Markdown (*.md *.markdown)',
+        )
+        if not files:
+            return
+
+        parsed_names = []
+        errors = []
+        # existing 在每次迭代后都要累加新内容，避免多选文件时前一个被后一个覆盖
+        existing = self.context_input.toPlainText().strip()
+
+        for f in files:
+            try:
+                text = parse_reference_file(f)
+                name = Path(f).name
+                parsed_names.append(name)
+                # 带来源标注，便于 AI 区分不同文件内容；existing 累加，保留已加载文件
+                existing = (existing + '\n\n' if existing else '') + f'=== 来源: {name} ===\n{text}'
+                self.context_input.setPlainText(existing)
+            except ValueError as e:
+                errors.append(str(e))
+
+        if parsed_names:
+            self.uploaded_label.setText(
+                f'✓ 已加载: {", ".join(parsed_names)}'
+                + (f'（{len(errors)}个失败）' if errors else '')
+            )
+            self.context_input.setPlainText(self.context_input.toPlainText())  # 刷新
+        if errors:
+            QMessageBox.warning(self, '解析提示', '\n'.join(errors))
 
     def start_generate(self):
         if self.thread and self.thread.isRunning():

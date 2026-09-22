@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTextBrowser, QListWidget, QListWidgetItem,
                              QScrollArea, QFrame)
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QBrush
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QBrush, QPalette
 from settings_module import Presentation
 import os
 import base64
@@ -77,6 +77,8 @@ class PreviewWidget(QWidget):
         "business": {"primary": "#1a5490", "accent": "#2f6fed", "bg": "#f8fafc"},
         "academic": {"primary": "#5a3e1b", "accent": "#8b5e3c", "bg": "#faf8f5"},
         "creative": {"primary": "#6b1d5e", "accent": "#9b59b6", "bg": "#faf5ff"},
+        "tech": {"primary": "#0a3d62", "accent": "#0ea5e9", "bg": "#f0f9ff"},
+        "vibrant": {"primary": "#9a2b0f", "accent": "#f97316", "bg": "#fff7ed"},
     }
 
     def __init__(self, parent=None):

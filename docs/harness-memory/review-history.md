@@ -368,3 +368,58 @@ P0=2, P1=2, P2=3, P3=2。确认问题：
   - F-26-04(P3) BANNER_BAND_H_MAX 注释推导不符 → 已修复：补推导公式（实际文字区约 1.35"）
 - **闭环**：1 轮（修复为测试/注释级，无功能变更，双产物无需重建）
 - **结论**：通过，可合入
+
+## Round 27（2026-09-15）— Agnes API 恢复 + settings 完整性 + Pillow 兜底质量 + 版本号 v1.1
+- **触发**：用户「对autoslide再次更新，Agnes API 恢复 + settings 完整性确认 + Pillow 兜底质量微调，同时修改版本号之类的，记得规则」
+- **改动**（6 文件）：
+  - `core/image_generator.py`：_THEME_COLORS 新增 tech/vibrant；网格线改在 RGBA overlay 绘制（修复 RGB 模式 alpha 被忽略发黑）；line_scale 随画布比例缩放；卡片圆角/装饰条按高度缩放；无标题场景改水平居中细线
+  - `core/pptx_builder.py`：**_recommend_layout 重写**（image_layout 始终尊重上游显式值，仅对页面结构做内容感知推荐）；_estimate_natural_width 系数 CJK 0.82→1.0 / ASCII 0.55→0.6（修正稀疏放大误判）
+  - `ui/main_window.py` + `scripts/autoslide_setup.iss`：版本号 v1.0→v1.1
+  - `ui/generator_widget.py` + `core/outline_generator.py`：风格下拉与主题映射新增 Tech/Vibrant
+- **关键修复**：9/7 引入的 _recommend_layout 按内容特征覆盖 image_layout，破坏了 9/4 建立的 top/bottom 横幅零裁剪链路（V6/V8 测试 18 项失败）→ 改为「image_layout 透传显式值，不做智能覆盖」，12+7+5 三层测试复绿
+- **Agnes API 探活**：env AGNES_API_KEY（前缀 sk-gJSXcrUi6）有效，生图返回平台 URL（agnes 已恢复，无需 Pillow 兜底）
+- **验证**：py_compile ✓；_test_layout 12场景 ✓；_test_extreme 7 ✓；_test_export 5/5 ✓；exe(9.8MB)+安装包(41.7MB) 重构建；冒烟进程存活/窗口句柄非0
+- **审查**：Claude 独立审查被安全策略拦截（reg.exe 在程序黑名单，sandbox 无法启动），降级为**严格自我审查**——逐项核验 _recommend_layout 7场景、版本号一致性（无 v1.0 残留）、Pillow 6主题/布局组合、settings 5个 image_* 键完整性，全部通过
+- **闭环**：1 轮（含 1 次回归修复：_recommend_layout 覆盖 image_layout → 12 场景复绿）
+- **结论**：通过，可合入（自审替代独立审查，已如实记录）
+
+## 第 28 轮 - PASS with warnings（参考资料 PDF/MD 上传 + Prompt 工程优化）
+**审查者**: 严格自我审查（Claude 独立审查因环境限制不可用，$CLAUDE 未设置 / reg.exe 黑名单，已如实记录）
+**触发**：用户「参考资料输入（PDF/MD 上传）+ Prompt 工程优化」
+**审查结论**：Overall Result = PASS with warnings；P0=0, P1=1(已修复), P2=1, P3=2。
+
+**实现摘要**（6 文件）：
+1. `core/doc_parser.py`（新建）— PDF(PyPDF2 逐页+[第N页]标注)+Markdown(标记清理)→纯文本，入口 `parse_reference_file`，MAX_FILE_CHARS=12000 截断保护，加密/0页/扫描件/不支持类型统一抛 ValueError
+2. `ui/generator_widget.py` — 参考材料区加「📎 上传参考文件」按钮，`upload_reference_files` 多选解析后以 `=== 来源: 文件名 ===` 标注追加到 context_input，解析失败弹 QMessageBox.warning
+3. `core/prompt_builder.py` — `_build_context_block` 增强（EXTRACT don't copy + 事实/观点/结构三类处理原则 + 忠实度）；`_build_references_block` 分条引导；大纲 Prompt 第4条新增「内容忠实度」约束
+4. `ui/theme.py` — 明/暗两套主题各补 secondaryBtn + uploadedHint 样式
+5. `AutoSlide.spec` — hiddenimports 增加 'PyPDF2'
+6. `requirements.txt` — 增加 PyPDF2>=3.0.0
+
+**发现与修复闭环**:
+- F-28-01 (P1) `upload_reference_files` 多选文件时 `existing` 只读一次，循环内 setPlainText 覆盖导致只保留最后一个文件、丢失之前文件与用户手打内容 → **已修复**：`existing` 在每次迭代后累加新内容，重打包+冒烟通过（窗口句柄 67806）
+- F-28-02 (P2) doc_parser MAX_FILE_CHARS=12000 与 prompt_builder MAX_CONTEXT_CHARS 双层截断阈值不一致，多文件拼接后二次截断可能丢失来源标注 → **记录为优化建议**，不影响功能
+- F-28-03 (P3) 扫描件 PDF 提示文案可加 OCR 引导 → **接受**（可选优化）
+- F-28-04 (P3) 代码块 fence 行保留可能引入噪音 → **接受**（可选优化）
+
+**关键验证**:
+- exe PKG PYZ 归档含 32 个 PyPDF2 条目（纯 Python 包正常进 PYZ，无需改 spec）
+- 交接文档误判「PyPDF2 未收集到 _internal/」澄清：纯 Python 包编译进 PYZ 而非 _internal，是 PyInstaller 正常行为
+
+**验证**: py_compile ✓；_test_layout 12场景 ✓；_test_extreme 7 ✓；_test_export 5/5 ✓；exe(10.3MB)+安装包(42.2MB) 重构建；冒烟进程存活/窗口句柄 67806
+**结论**：通过，可合入（自审替代独立审查，P1 已修复验证，已如实记录）
+
+## 第 29 轮 - PASS（预览页面暗色模式 bug 修复）
+**审查者**: 严格自我审查（Claude 独立审查因环境限制不可用，$CLAUDE 未设置 / reg.exe 黑名单，已如实记录）
+**触发**：用户「修bug，看日志，记得规则,预览页面有问题」
+
+**实现摘要**（1 文件 2 处修复）：
+1. `ui/preview_widget.py` — **P1 修复**：`_is_dark()` 中 `QPalette.ColorRole.Window` 未导入 `QPalette`，导致 `NameError` 被 `except Exception` 静默吞掉、`_is_dark()` 恒返回 `False`。后果：暗色主题下预览页永远用浅色样式渲染（白底+深字），对比度极差，即用户看到的"预览页面有问题"。修复：`from PyQt6.QtGui import ... QPalette`
+2. `ui/preview_widget.py` — **P2 修复**：第27轮新增的 tech/vibrant 主题未在 `THEME_COLORS` 字典中同步，预览页 fallback 到 business 配色（与 pptx_builder.THEMES 色阶不一致）。修复：补 `tech: {#0a3d62/#0ea5e9/#f0f9ff}` + `vibrant: {#9a2b0f/#f97316/#fff7ed}`
+
+**发现与修复闭环**:
+- F-29-01 (P1) `QPalette` 未导入 → `_is_dark()` 恒 False → 暗色模式预览样式错误 → **已修复**：补 PyQt6.QtGui 导入
+- F-29-02 (P2) THEME_COLORS 缺 tech/vibrant → 预览配色与 PPT 实际渲染不一致 → **已修复**：补两主题色阶
+
+**验证**: py_compile ✓；`_is_dark()` 不再 NameError（离屏测试返回 False 正常）；`update_preview` 全链路（business/tech 主题）✓；三层测试 `_test_layout` 12 ✓ / `_test_extreme` 7 ✓ / `_test_export` 5/5 ✓；exe(10.3MB)+安装包(42.2MB) 重构建；冒烟窗口句柄 330908
+**结论**：通过，可合入（自审替代独立审查，已如实记录）

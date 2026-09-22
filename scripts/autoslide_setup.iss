@@ -3,7 +3,7 @@
 ; 注意：请在项目根目录运行 `ISCC.exe autoslide_setup.iss`（相对路径 Source/OutputDir 依赖此前提）
 
 #define MyAppName "AutoSlide"
-#define MyAppVersion "1.0"
+#define MyAppVersion "1.1"
 #define MyAppPublisher "NCZ Racing"
 #define MyAppExeName "AutoSlide.exe"
 
@@ -16,9 +16,9 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=E:\study\projects\autoslide\installer
+OutputDir=E:\life\study\projects\autos\autoslide\installer
 OutputBaseFilename=AutoSlide-Setup
-SetupIconFile=E:\study\projects\autoslide\resources\icons\app.ico
+SetupIconFile=E:\life\study\projects\autos\autoslide\resources\icons\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 VersionInfoCopyright=Copyright (c) 2026 NCZ Racing

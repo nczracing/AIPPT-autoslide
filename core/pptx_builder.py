@@ -50,6 +50,15 @@ class PPTXBuilder:
         "two_content": 3,  # 双栏
     }
 
+    # 图片布局权重表（根据内容特征推荐布局）
+    IMAGE_LAYOUT_PREFERENCES = {
+        "data_heavy": ["right", "left", "bottom"],      # 数据密集型：优先左右，次选底部
+        "process_flow": ["top", "right"],                # 流程类：优先顶部大图
+        "technical": ["right", "left"],                  # 技术类：标准左右分栏
+        "minimal": ["fullscreen", "top"],                # 精简内容：全屏背景或顶部
+        "balanced": ["right", "left", "top"],            # 均衡内容：标准布局
+    }
+
     # 主题配色（每个主题含背景渐变、装饰、标题、正文、强调等完整色阶）
     THEMES = {
         "business": {
@@ -78,6 +87,24 @@ class PPTXBuilder:
             "bg_bottom": (244, 234, 246),     # 极浅紫
             "deco_color": (232, 208, 238),
             "deco2_color": (240, 222, 244),
+        },
+        "tech": {
+            "title_color": (0, 102, 153),     # 科技蓝
+            "accent_color": (0, 153, 204),    # 亮蓝
+            "text_color": (30, 40, 50),
+            "bg_top": (248, 250, 252),        # 冷灰白
+            "bg_bottom": (232, 240, 248),     # 极浅蓝灰
+            "deco_color": (180, 210, 235),    # 浅蓝灰
+            "deco2_color": (200, 220, 240),
+        },
+        "vibrant": {
+            "title_color": (180, 60, 30),     # 活力橙红
+            "accent_color": (220, 90, 50),    # 亮橙
+            "text_color": (50, 35, 30),
+            "bg_top": (255, 252, 250),        # 暖白
+            "bg_bottom": (250, 235, 225),     # 极浅橙
+            "deco_color": (245, 200, 180),    # 浅橙
+            "deco2_color": (250, 220, 200),
         },
     }
 
@@ -145,7 +172,21 @@ class PPTXBuilder:
                 slide_anims.append(transition_effects[i % len(transition_effects)])
 
         for idx, slide in enumerate(presentation.slides):
-            layout_index = self.LAYOUTS.get(slide.layout, 1)
+            # AI统筹排版：根据内容特征智能决定页面结构（双栏/单栏）
+            visual = self._derive_slide_visual(slide)
+            layout_mode = visual["layout"]["mode"]
+            image_layout = visual["layout"].get("image_layout") or (
+                slide.image_layout if slide.image_path else "right"
+            )
+
+            # 根据推荐模式选择实际布局
+            if layout_mode == "title_slide":
+                layout_index = self.LAYOUTS["title_slide"]
+            elif layout_mode in ("two_column", "references"):
+                layout_index = self.LAYOUTS["two_content"]
+            else:
+                layout_index = self.LAYOUTS["title_content"]
+
             try:
                 slide_layout = prs.slide_layouts[layout_index]
             except IndexError:
@@ -157,8 +198,8 @@ class PPTXBuilder:
             # 1) 先铺背景与装饰（内容感知，置底，不遮挡正文）
             self._apply_background(slide_obj, theme, slide)
 
-            # 2) 标题
-            if slide.layout == "title_slide":
+            # 2) 标题（根据AI推荐布局决定）
+            if layout_mode == "title_slide":
                 self._set_title_cover(slide_obj, slide.title, theme)
             else:
                 self._set_title(slide_obj, slide.title, theme)
@@ -170,19 +211,19 @@ class PPTXBuilder:
             # 重置正文注册表（每页独立）
             self._content_registry = []
 
-            # 4) 正文内容（带动画）
-            if slide.layout == "title_slide":
+            # 4) 正文内容（根据AI推荐布局填充）
+            if layout_mode == "title_slide":
                 self._set_subtitle(slide_obj, slide.detail, theme)
-            elif slide.layout == "references":
+            elif layout_mode == "references":
                 self._fill_references(slide_obj, slide, theme)
-            elif slide.layout == "two_content":
+            elif layout_mode == "two_column":
                 self._fill_two_content(slide_obj, slide, theme, has_image)
             else:
                 self._fill_content(slide_obj, slide, theme, has_image)
 
-            # 5) 插图（图文混排，带描边，布局多样化）
+            # 5) 插图（图文混排，带描边，使用AI推荐的布局）
             if has_image:
-                self._add_image(slide_obj, image_path, theme, slide.image_layout)
+                self._add_image(slide_obj, image_path, theme, image_layout or "right")
 
             # 5.5) 正文自适应：按最终几何重新计算字号，确保文字不溢出屏幕
             self._fit_registered_text()
@@ -210,7 +251,7 @@ class PPTXBuilder:
     # 内容感知：视觉参数推导
     # ==================================================================
     def _derive_slide_visual(self, slide: Slide) -> dict:
-        """根据单页内容推导视觉参数：装饰母题、确定性种子、装饰密度。"""
+        """根据单页内容推导视觉参数：装饰母题、确定性种子、装饰密度、布局推荐。"""
         text = " | ".join(
             filter(None, [slide.title, slide.detail] + list(slide.points or []))
         )
@@ -223,7 +264,48 @@ class PPTXBuilder:
         seed = int(digest[:8], 16)
         # 密度：要点越多装饰越少（避免视觉拥挤）
         density = max(0.45, 1.0 - len(slide.points or []) * 0.13)
-        return {"motif": motif, "seed": seed, "density": density}
+
+        # AI统筹排版决策
+        layout_recommendation = self._recommend_layout(slide)
+
+        return {
+            "motif": motif,
+            "seed": seed,
+            "density": density,
+            "layout": layout_recommendation,
+        }
+
+    def _recommend_layout(self, slide: Slide) -> dict:
+        """AI 统筹排版：根据内容特征智能决定「页面结构」（双栏/单栏）。
+
+        核心原则：
+        - **image_layout（图片布局）始终尊重上游显式值**（用户选择或 AI 大纲生成器
+          按语义分配的 right/left/top/bottom/fullscreen），本方法不做覆盖，
+          避免破坏 9/4 起建立的图片布局语义与横幅零裁剪链路。
+        - 仅对「页面结构」做内容感知推荐：无图且要点≥5 → 双栏；其余 → 单栏。
+        - 封面页 / 参考文献页固定布局。
+        """
+        # 封面页 / 参考文献页：固定，不做智能推荐
+        if slide.layout == "title_slide":
+            return {"mode": "title_slide", "image_layout": None}
+        if slide.layout == "references":
+            return {"mode": "references", "image_layout": None}
+
+        # 尊重显式双栏选择
+        if slide.layout == "two_content":
+            return {"mode": "two_column", "image_layout": None}
+
+        # image_layout 始终透传上游显式值（默认 "right"），不做智能覆盖
+        # 仅当有可用图片时透传，否则为 None（单栏纯文字页无图可布局）
+        has_image = bool(slide.image_path) and os.path.exists(slide.image_path)
+        image_layout = slide.image_layout if has_image else None
+
+        # 内容感知：无图且要点≥5 → 双栏；否则单栏
+        points_count = len(slide.points or [])
+        if not has_image and points_count >= 5:
+            return {"mode": "two_column", "image_layout": None}
+
+        return {"mode": "title_content", "image_layout": image_layout}
 
     def _classify_content(self, text: str) -> str:
         """关键词匹配装饰母题；无匹配返回默认几何母题。"""
@@ -310,7 +392,7 @@ class PPTXBuilder:
         return shapes
 
     def _deco_cover(self, slide_obj, theme, rng):
-        """封面装饰：四角对称大几何（比内容页更华丽）。"""
+        """封面装饰：多层次几何装饰（比内容页更华丽）。"""
         shapes = []
         deco = self._shift_color(theme["deco_color"], rng.randint(-15, 15))
         deco2 = self._shift_color(theme["deco2_color"], rng.randint(-10, 10))
@@ -325,6 +407,15 @@ class PPTXBuilder:
         band.line.fill.background()
         shapes.append(band)
 
+        # 左上大圆环（虚线效果）
+        ring1 = slide_obj.shapes.add_shape(
+            MSO_SHAPE.OVAL, Inches(-0.8), Inches(-0.8), Inches(3.0), Inches(3.0)
+        )
+        ring1.fill.background()
+        ring1.line.color.rgb = self._rgb_to_color(deco)
+        ring1.line.width = Pt(4.0)
+        shapes.append(ring1)
+
         # 左下大圆（部分出血）
         c1 = slide_obj.shapes.add_shape(
             MSO_SHAPE.OVAL, Inches(-1.2), Inches(4.9), Inches(4.2), Inches(4.2)
@@ -333,6 +424,15 @@ class PPTXBuilder:
         c1.fill.fore_color.rgb = self._rgb_to_color(deco)
         c1.line.fill.background()
         shapes.append(c1)
+
+        # 中部装饰圆（半透明叠加）
+        c_mid = slide_obj.shapes.add_shape(
+            MSO_SHAPE.OVAL, Inches(2.5), Inches(4.5), Inches(2.5), Inches(2.5)
+        )
+        c_mid.fill.solid()
+        c_mid.fill.fore_color.rgb = self._rgb_to_color(deco2)
+        c_mid.line.fill.background()
+        shapes.append(c_mid)
 
         # 右上大圆环
         ring = slide_obj.shapes.add_shape(
@@ -360,6 +460,25 @@ class PPTXBuilder:
         ring2.line.color.rgb = self._rgb_to_color(deco)
         ring2.line.width = Pt(2.0)
         shapes.append(ring2)
+
+        # 左下角点缀小圆
+        dot1 = slide_obj.shapes.add_shape(
+            MSO_SHAPE.OVAL, Inches(0.5), Inches(6.0), Inches(0.25), Inches(0.25)
+        )
+        dot1.fill.solid()
+        dot1.fill.fore_color.rgb = self._rgb_to_color(title_c)
+        dot1.line.fill.background()
+        shapes.append(dot1)
+
+        # 右上角点缀小圆
+        dot2 = slide_obj.shapes.add_shape(
+            MSO_SHAPE.OVAL, Inches(12.5), Inches(0.4), Inches(0.2), Inches(0.2)
+        )
+        dot2.fill.solid()
+        dot2.fill.fore_color.rgb = self._rgb_to_color(deco)
+        dot2.line.fill.background()
+        shapes.append(dot2)
+
         return shapes
 
     def _draw_deco_motif(self, slide_obj, theme, motif, rng, density):
@@ -528,23 +647,31 @@ class PPTXBuilder:
         return shapes
 
     def _draw_minor_deco(self, slide_obj, theme, rng, density):
-        """次要装饰：左上/右上小圆，位置由内容种子决定。"""
+        """次要装饰：左上/右上小圆 + 对角装饰元素，丰富视觉层次。"""
         shapes = []
         if density < 0.55:
             return shapes
         deco = self._shift_color(theme["deco_color"], rng.randint(-15, 15))
-        if rng.random() < 0.5:
-            x = rng.uniform(0.35, 0.9)
-        else:
-            x = rng.uniform(12.1, 12.7)
-        y = rng.uniform(0.35, 1.0)
-        dot = slide_obj.shapes.add_shape(
-            MSO_SHAPE.OVAL, Inches(x), Inches(y), Inches(0.34), Inches(0.34)
+
+        # 左上小圆
+        dot1 = slide_obj.shapes.add_shape(
+            MSO_SHAPE.OVAL, Inches(0.3), Inches(0.3), Inches(0.28), Inches(0.28)
         )
-        dot.fill.solid()
-        dot.fill.fore_color.rgb = self._rgb_to_color(deco)
-        dot.line.fill.background()
-        shapes.append(dot)
+        dot1.fill.solid()
+        dot1.fill.fore_color.rgb = self._rgb_to_color(deco)
+        dot1.line.fill.background()
+        shapes.append(dot1)
+
+        # 右上角小圆环（可选）
+        if rng.random() < 0.6:
+            ring = slide_obj.shapes.add_shape(
+                MSO_SHAPE.OVAL, Inches(12.5), Inches(0.25), Inches(0.5), Inches(0.5)
+            )
+            ring.fill.background()
+            ring.line.color.rgb = self._rgb_to_color(deco)
+            ring.line.width = Pt(1.5)
+            shapes.append(ring)
+
         return shapes
 
     def _add_footer(self, slide_obj, theme):
@@ -652,32 +779,50 @@ class PPTXBuilder:
         self._add_title_line(slide_obj, title_box, theme)
 
     def _set_title_cover(self, slide_obj, title, theme):
-        """封面标题：居中大字号 + 居中装饰线。"""
+        """封面标题：居中大字号 + 居中装饰线 + 副标题。"""
         title_box = slide_obj.shapes.title
         if title_box is None:
             title_box = slide_obj.shapes.add_textbox(
-                Inches(1.0), Inches(2.2), Inches(11.3), Inches(1.8)
+                Inches(1.0), Inches(2.8), Inches(11.3), Inches(1.5)
             )
+        else:
+            title_box.left = Inches(1.0)
+            title_box.top = Inches(2.8)
+            title_box.width = Inches(11.3)
+            title_box.height = Inches(1.5)
         tf = title_box.text_frame
         tf.word_wrap = True
         tf.clear()
         p = tf.paragraphs[0]
         p.text = title
-        p.font.size = Pt(46)
+        p.font.size = Pt(44)
         p.font.bold = True
         p.font.color.rgb = self._rgb_to_color(theme["title_color"])
         p.alignment = PP_ALIGN.CENTER
-        # 封面装饰线（居中，稍宽）
+
+        # 封面装饰线（居中，更宽）
         try:
             line = slide_obj.shapes.add_shape(
                 MSO_SHAPE.RECTANGLE,
-                Inches(5.17), Inches(4.1), Inches(3.0), Inches(0.06),
+                Inches(5.17), Inches(4.4), Inches(3.0), Inches(0.08),
             )
             line.fill.solid()
             line.fill.fore_color.rgb = self._rgb_to_color(theme["accent_color"])
             line.line.fill.background()
         except Exception as e:
             logger.debug("封面装饰线绘制失败: %s", e)
+
+        # 封面副标题装饰框（可选）
+        try:
+            deco_box = slide_obj.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Inches(4.5), Inches(4.65), Inches(4.3), Inches(0.02),
+            )
+            deco_box.fill.solid()
+            deco_box.fill.fore_color.rgb = self._rgb_to_color(theme["deco_color"])
+            deco_box.line.fill.background()
+        except Exception:
+            pass
 
     def _add_title_line(self, slide_obj, title_box, theme):
         """标题下方一条主题色装饰短线。"""
@@ -1088,15 +1233,16 @@ class PPTXBuilder:
     def _estimate_natural_width(detail, points):
         """估算正文块的自然宽度（各段不换行时的最大行宽，英寸）。
 
-        中文按字宽 ≈ 0.82×字号、ASCII ≈ 0.55×字号 估算，
-        用于判断内容是否稀疏（自然宽度远小于文字区宽度）。
+        中文按字宽 ≈ 1.0×字号、ASCII ≈ 0.6×字号估算（取较保守的系数，
+        避免低估导致稀疏放大逻辑误判），用于判断内容是否稀疏
+        （自然宽度远小于文字区宽度）。
         """
         def line_w(text, size):
             if not text:
                 return 0.0
             cjk = sum(1 for ch in text if ord(ch) > 0x2E80)
             asc = len(text) - cjk
-            return (cjk * 0.82 + asc * 0.55) * size / 72.0
+            return (cjk * 1.0 + asc * 0.6) * size / 72.0
 
         widths = []
         if detail:

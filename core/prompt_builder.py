@@ -40,7 +40,8 @@ Content quality requirements (this is the core value — do NOT output a bare ou
      * Do not repeat the same value more than twice in a row; keep the deck visually rhythmic.
    - "image_prompt": a vivid, detailed English prompt for a high-quality illustration, structured as: subject + scene + style + lighting + composition + quality tags (e.g. "A confident young software engineer standing at a crossroads with three glowing signposts labeled code, team and product, warm studio lighting, flat vector illustration with subtle gradients and soft shadows, clean balanced composition, high detail"). Be concrete and specific — name objects, colors, mood and perspective; prefer informative, well-composed, information-rich visuals over minimal icons. Provide it for content slides where a visual genuinely adds value; leave it as an empty string "" for the cover, agenda, summary, thanks slides, and any text-heavy slide where an illustration would be redundant.
 3. Be accurate and specific — cite real concepts, numbers, or examples appropriate to the topic. Tailor depth to the audience implied by the topic.
-4. Keep the JSON valid: use double quotes, separate keys/values and array items with commas, no trailing commas, no comments.
+4. When reference material or context is provided above, stay FAITHFUL to it: use its facts, figures, and viewpoints, and do not invent claims that contradict it. If the material is incomplete for a slide, fill gaps with general accurate knowledge only, clearly in the source's spirit.
+5. Keep the JSON valid: use double quotes, separate keys/values and array items with commas, no trailing commas, no comments.
 
 Output ONLY valid JSON in the following shape:
 {{
@@ -108,7 +109,10 @@ Output complete content in JSON format."""
 
     @staticmethod
     def _build_references_block(references: str) -> str:
-        """构造参考文献约束段落；无参考文献时返回空串。"""
+        """构造参考文献约束段落；无参考文献时返回空串。
+
+        增强引导：明确"自然引用+归因"的写法与"不虚构反证"的忠实度约束。
+        """
         refs = (references or "").strip()
         if not refs:
             return ""
@@ -118,31 +122,49 @@ Output complete content in JSON format."""
             "Reference materials — the presentation content MUST be grounded in and "
             "cite these references:\n"
             + refs
-            + "\n\nWhen writing each slide's 'detail' and 'points', naturally incorporate "
-            "and attribute the ideas, findings, data, or viewpoints from the above "
-            "references (e.g. 'according to ...', '... demonstrated that ...', 'X et al. found ...'). "
-            "Do NOT fabricate facts that contradict the references, and keep the tone academic. "
-            "You do NOT need to output a separate references slide — one will be appended automatically."
+            + "\n\nHow to use the references:\n"
+            "1. In each slide's 'detail' and 'points', naturally incorporate and "
+            "attribute the ideas, findings, data, or viewpoints from the references "
+            "above (e.g. 'according to ...', '... demonstrated that ...', "
+            "'X et al. found ...').\n"
+            "2. Do NOT fabricate facts or numbers that contradict the references; "
+            "keep the tone academic.\n"
+            "3. Formal citations are handled separately — you do NOT need to output a "
+            "references slide (one is appended automatically by the system)."
         )
 
     @staticmethod
     def _build_context_block(context: str) -> str:
-        """构造参考资料/背景材料约束段落；无内容时返回空串。"""
+        """构造参考资料/背景材料约束段落；无内容时返回空串。
+
+        增强引导：提示 AI 区分三类材料（事实/数据、观点/结论、结构/术语），
+        并明确"忠实但不逐字复制"的原则，避免整块照搬。
+        """
         ctx = (context or "").strip()
         if not ctx:
             return ""
         if len(ctx) > PromptBuilder.MAX_CONTEXT_CHARS:
             ctx = ctx[: PromptBuilder.MAX_CONTEXT_CHARS] + "\n...(参考材料过长，已截断)..."
         return (
-            "Background reference material provided by the user (helps understand "
-            "the intended content of this presentation):\n"
+            "Background reference material provided by the user "
+            "(helps understand the intended content of this presentation):\n"
             + ctx
-            + "\n\nUse the material above to enrich the presentation: extract key "
-            "facts, data, viewpoints, terminology, and structure suggestions from it, "
-            "and incorporate them into the slides' 'points' and 'detail' where relevant. "
-            "Stay faithful to the material — do not contradict it — but do not copy it "
-            "verbatim as a single block. The material is guidance for content, NOT a "
-            "list of formal citations."
+            + "\n\n"
+            "How to use the material above:\n"
+            "1. EXTRACT, don't copy: pull out key facts, figures, viewpoints, "
+            "terminology and structural suggestions, then weave them into the "
+            "relevant slides' 'points' and 'detail'. Do NOT paste the material "
+            "in as one block, and do NOT contradict it.\n"
+            "2. Three material types and their treatment:\n"
+            "   - Facts / data: keep numbers and concrete figures exactly as "
+            "given; cite them naturally in 'detail'.\n"
+            "   - Viewpoints / conclusions: attribute them (e.g. 'the material "
+            "argues that ...') and may paraphrase but preserve the meaning.\n"
+            "   - Structure / terminology: use as cues for slide ordering and "
+            "wording, so the deck stays consistent with the source's framing.\n"
+            "3. The material is content guidance, NOT a list of formal citations "
+            "(use the 'references' field for formal citations). Skip portions that "
+            "are irrelevant to the topic."
         )
 
     def build_content_prompt(self, outline: dict) -> str:

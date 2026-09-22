@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
             self.settings = get_settings()
 
     def show_about(self):
-        QMessageBox.about(self, '关于 AutoSlide', 'AutoSlide v1.0\nAI 驱动的 PPT 生成器')
+        QMessageBox.about(self, '关于 AutoSlide', 'AutoSlide v1.1\nAI 驱动的 PPT 生成器')
 
     def update_preview(self, presentation):
         """更新预览面板"""

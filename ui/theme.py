@@ -198,6 +198,28 @@ QPushButton#primaryBtn:disabled {{
     color: #8fa4cc;
 }}
 
+QPushButton#secondaryBtn {{
+    background: #ffffff;
+    color: #2f3a4a;
+    border: 1px solid #d5deee;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+}}
+QPushButton#secondaryBtn:hover {{
+    background: #f0f4fa;
+    border-color: {PRIMARY};
+}}
+QPushButton#secondaryBtn:pressed {{
+    background: #e4ebf5;
+}}
+
+QLabel#uploadedHint {{
+    color: #2e9e6b;
+    font-size: 12px;
+    padding-left: 8px;
+}}
+
 /* ── 进度条 ───────────────────────────────────────── */
 QProgressBar {{
     background: #e2e8f0;
@@ -445,6 +467,28 @@ QPushButton#primaryBtn:pressed {{
 QPushButton#primaryBtn:disabled {{
     background: #2a3040;
     color: #5a6a8a;
+}}
+
+QPushButton#secondaryBtn {{
+    background: #2a3242;
+    color: #d5deee;
+    border: 1px solid {BORDER_DARK};
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+}}
+QPushButton#secondaryBtn:hover {{
+    background: #333e52;
+    border-color: {PRIMARY};
+}}
+QPushButton#secondaryBtn:pressed {{
+    background: #242b38;
+}}
+
+QLabel#uploadedHint {{
+    color: #6fd39b;
+    font-size: 12px;
+    padding-left: 8px;
 }}
 
 /* ── 进度条 ───────────────────────────────────────── */

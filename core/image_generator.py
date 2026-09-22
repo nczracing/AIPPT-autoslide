@@ -28,6 +28,8 @@ _THEME_COLORS = {
     "business": ((0, 51, 102), (51, 102, 153), (230, 240, 250)),
     "academic": ((102, 51, 0), (153, 102, 51), (250, 244, 230)),
     "creative": ((102, 0, 102), (153, 51, 153), (250, 240, 250)),
+    "tech": ((0, 102, 153), (0, 153, 204), (235, 245, 252)),
+    "vibrant": ((180, 60, 30), (220, 90, 50), (252, 240, 232)),
 }
 
 
@@ -285,6 +287,10 @@ class ImageGenerator:
             theme, _THEME_COLORS["business"]
         )
         width, height = self.LAYOUT_FALLBACK_CANVAS.get(layout, (1024, 1024))
+        # 画布宽高比系数：横幅（4.97:1）下 1px 线宽太细，需放大；竖版则保持
+        aspect = width / height
+        line_scale = max(1.0, min(3.0, aspect / 2.0))  # 2:1→1x, 4.97:1→~2.5x
+
         img = Image.new("RGB", (width, height), light)
         draw = ImageDraw.Draw(img)
 
@@ -296,15 +302,17 @@ class ImageGenerator:
             b = int(primary[2] + (light[2] - primary[2]) * ratio)
             draw.line([(0, y), (width, y)], fill=(r, g, b))
 
-        # 细网格线（增加设计感）
-        for x in range(0, width, 64):
-            draw.line([(x, 0), (x, height)], fill=(*primary, 18))
-        for y in range(0, height, 64):
-            draw.line([(0, y), (width, y)], fill=(*primary, 18))
-
-        # 装饰性半透明圆形（按画布比例缩放）
+        # 装饰性半透明圆形 + 细网格线（合并到同一 RGBA overlay，alpha 才能生效）
+        # 注意：之前网格画在 RGB 图上，alpha=18 被忽略导致线条发黑；移到 overlay 修复
         overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         od = ImageDraw.Draw(overlay)
+        # 细网格线（增加设计感；线宽按画布比例缩放）
+        grid_w = max(1, int(1.5 * line_scale))
+        for x in range(0, width, 64):
+            od.line([(x, 0), (x, height)], fill=(*primary, 22), width=grid_w)
+        for y in range(0, height, 64):
+            od.line([(0, y), (width, y)], fill=(*primary, 22), width=grid_w)
+        # 装饰圆（按画布比例缩放）
         od.ellipse((width * 0.55, -height * 0.2, width * 1.15, height * 0.4), fill=(*accent, 80))
         od.ellipse((-width * 0.25, height * 0.6, width * 0.35, height * 1.2), fill=(*accent, 55))
         od.ellipse((width * 0.72, height * 0.62, width * 1.05, height * 0.95), fill=(*primary, 70))
@@ -312,11 +320,22 @@ class ImageGenerator:
         img = Image.alpha_composite(img, overlay).convert("RGB")
         draw = ImageDraw.Draw(img)
 
-        # 中心圆角卡片（视觉焦点）
+        # 中心圆角卡片（视觉焦点；圆角随画布高度缩放，横幅下不过大）
         card = [int(width * 0.12), int(height * 0.26), int(width * 0.88), int(height * 0.74)]
-        draw.rounded_rectangle(card, radius=32, fill=(255, 255, 255), outline=accent, width=3)
-        # 卡片顶部主题色装饰条
-        draw.rectangle([card[0], card[1], card[2], card[1] + 10], fill=accent)
+        card_radius = max(8, min(32, int(height * 0.03)))
+        draw.rounded_rectangle(card, radius=card_radius, fill=(255, 255, 255), outline=accent,
+                               width=max(2, int(3 * line_scale)))
+
+        # 卡片顶部主题色装饰条（有标题时显示；高度按画布比例缩放，横幅下不再显粗）
+        if slide_title:
+            bar_h = max(3, int(height * 0.012 * line_scale))
+            draw.rectangle([card[0], card[1], card[2], card[1] + bar_h], fill=accent)
+        else:
+            # 无标题时改为水平居中细线，避免贴顶视觉失衡
+            mid_y = (card[1] + card[3]) // 2
+            draw.line([(card[0] + int(width * 0.15), mid_y),
+                       (card[2] - int(width * 0.15), mid_y)],
+                      fill=accent, width=max(2, int(2 * line_scale)))
 
         font_path = _find_cjk_font()
         if font_path and slide_title:
