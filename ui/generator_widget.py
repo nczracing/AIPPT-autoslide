@@ -149,7 +149,7 @@ class GeneratorWidget(QWidget):
         layout.setSpacing(12)
 
         # 主题标题
-        topic_label = QLabel('🎯 PPT 主题 / 标题 (Topic / Title)')
+        topic_label = QLabel('PPT 主题 / 标题 (Topic / Title)')
         topic_label.setObjectName('fieldLabel')
         topic_label.setStyleSheet('font-size: 13px; margin-top: 2px;')
         layout.addWidget(topic_label)
@@ -159,7 +159,7 @@ class GeneratorWidget(QWidget):
 
         # 页数
         pages_layout = QHBoxLayout()
-        pages_label = QLabel('📄 页数 (Pages):')
+        pages_label = QLabel('页数 (Pages):')
         pages_label.setObjectName('fieldLabel')
         pages_layout.addWidget(pages_label)
         self.pages_spin = QSpinBox()
@@ -171,33 +171,33 @@ class GeneratorWidget(QWidget):
 
         # 风格
         style_layout = QHBoxLayout()
-        style_label = QLabel('🎨 风格 (Style):')
+        style_label = QLabel('风格 (Style):')
         style_label.setObjectName('fieldLabel')
         style_layout.addWidget(style_label)
         self.style_combo = QComboBox()
-        self.style_combo.addItem('💼 商务 (Business)', 'Business')
-        self.style_combo.addItem('📚 学术 (Academic)', 'Academic')
-        self.style_combo.addItem('✨ 创意 (Creative)', 'Creative')
-        self.style_combo.addItem('🔧 科技 (Tech)', 'Tech')
-        self.style_combo.addItem('🔥 活力 (Vibrant)', 'Vibrant')
+        self.style_combo.addItem('商务 (Business)', 'Business')
+        self.style_combo.addItem('学术 (Academic)', 'Academic')
+        self.style_combo.addItem('创意 (Creative)', 'Creative')
+        self.style_combo.addItem('科技 (Tech)', 'Tech')
+        self.style_combo.addItem('活力 (Vibrant)', 'Vibrant')
         style_layout.addWidget(self.style_combo)
         style_layout.addStretch()
         layout.addLayout(style_layout)
 
         # 语言
         lang_layout = QHBoxLayout()
-        lang_label = QLabel('🌐 语言 (Language):')
+        lang_label = QLabel('语言 (Language):')
         lang_label.setObjectName('fieldLabel')
         lang_layout.addWidget(lang_label)
         self.lang_combo = QComboBox()
-        self.lang_combo.addItem('🇨🇳 中文 (Chinese)', 'zh')
-        self.lang_combo.addItem('🇺🇸 英文 (English)', 'en')
+        self.lang_combo.addItem('中文 (Chinese)', 'zh')
+        self.lang_combo.addItem('英文 (English)', 'en')
         lang_layout.addWidget(self.lang_combo)
         lang_layout.addStretch()
         layout.addLayout(lang_layout)
 
         # 参考文献
-        ref_label = QLabel('📚 参考文献 (References, 选填)')
+        ref_label = QLabel('参考文献 (References, 选填)')
         ref_label.setObjectName('fieldLabel')
         layout.addWidget(ref_label)
         self.references_input = QTextEdit()
@@ -210,13 +210,13 @@ class GeneratorWidget(QWidget):
         layout.addWidget(self.references_input)
 
         # 参考材料
-        ctx_label = QLabel('💡 参考材料 (Reference Materials, 选填)')
+        ctx_label = QLabel('参考材料 (Reference Materials, 选填)')
         ctx_label.setObjectName('fieldLabel')
         layout.addWidget(ctx_label)
 
         # 上传参考文件按钮（PDF / MD）
         upload_layout = QHBoxLayout()
-        self.upload_btn = QPushButton('📎 上传参考文件 (PDF / MD)')
+        self.upload_btn = QPushButton('上传参考文件 (PDF / MD)')
         self.upload_btn.setObjectName('secondaryBtn')
         self.upload_btn.setCursor(self.cursor())
         self.upload_btn.clicked.connect(self.upload_reference_files)
@@ -265,7 +265,7 @@ class GeneratorWidget(QWidget):
         layout.addStretch()
 
         # 生成按钮
-        self.generate_btn = QPushButton('🚀 生成 (Generate)')
+        self.generate_btn = QPushButton('生成 (Generate)')
         self.generate_btn.setObjectName('primaryBtn')
         self.generate_btn.setCursor(self.cursor())
         self.generate_btn.clicked.connect(self.start_generate)
@@ -274,10 +274,10 @@ class GeneratorWidget(QWidget):
         # 操作按钮
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(12)
-        export_btn = QPushButton('📥 导出 PPTX (Export)')
+        export_btn = QPushButton('导出 PPTX (Export)')
         export_btn.clicked.connect(self.export_pptx)
         btn_layout.addWidget(export_btn)
-        preview_btn = QPushButton('👁️ 预览 (Preview)')
+        preview_btn = QPushButton('预览 (Preview)')
         preview_btn.clicked.connect(self.show_preview)
         btn_layout.addWidget(preview_btn)
         layout.addLayout(btn_layout)
@@ -311,7 +311,7 @@ class GeneratorWidget(QWidget):
 
         if parsed_names:
             self.uploaded_label.setText(
-                f'✓ 已加载: {", ".join(parsed_names)}'
+                f'已加载: {", ".join(parsed_names)}'
                 + (f'（{len(errors)}个失败）' if errors else '')
             )
             self.context_input.setPlainText(self.context_input.toPlainText())  # 刷新

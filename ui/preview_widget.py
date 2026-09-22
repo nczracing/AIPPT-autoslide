@@ -17,12 +17,12 @@ class SlideThumbnail(QListWidgetItem):
     """幻灯片缩略图项"""
     # 布局图标映射
     LAYOUT_ICONS = {
-        "right": "🖼️ 右侧",
-        "left": "🖼️ 左侧",
-        "top": "🖼️ 上方",
-        "bottom": "🖼️ 下方",
-        "fullscreen": "🖼️ 全屏",
-        "references": "📋 参考",
+        "right": "右侧",
+        "left": "左侧",
+        "top": "上方",
+        "bottom": "下方",
+        "fullscreen": "全屏",
+        "references": "参考",
     }
 
     def __init__(self, slide, theme="business"):
@@ -38,7 +38,7 @@ class SlideThumbnail(QListWidgetItem):
         """生成缩略图HTML"""
         is_dark = False  # 缩略图统一浅色背景以便识别
         layout_hint = slide.image_layout or "right"
-        layout_label = self.LAYOUT_ICONS.get(layout_hint, "🖼️")
+        layout_label = self.LAYOUT_ICONS.get(layout_hint, "右侧")
 
         theme_colors = PreviewWidget.THEME_COLORS.get(theme, PreviewWidget.THEME_COLORS["business"])
 
@@ -65,12 +65,12 @@ class PreviewWidget(QWidget):
     """幻灯片预览组件 - 左侧缩略图导航 + 右侧大图预览"""
 
     LAYOUT_ICONS = {
-        "right": ("🖼️ 右侧", "#4A90D9"),
-        "left": ("🖼️ 左侧", "#50C878"),
-        "top": ("🖼️ 上方", "#FF8C42"),
-        "bottom": ("🖼️ 下方", "#9B59B6"),
-        "fullscreen": ("🖼️ 全屏", "#E74C3C"),
-        "references": ("📋 参考", "#6C757D"),
+        "right": ("右侧", "#4A90D9"),
+        "left": ("左侧", "#50C878"),
+        "top": ("上方", "#FF8C42"),
+        "bottom": ("下方", "#9B59B6"),
+        "fullscreen": ("全屏", "#E74C3C"),
+        "references": ("参考", "#6C757D"),
     }
 
     THEME_COLORS = {
@@ -99,7 +99,7 @@ class PreviewWidget(QWidget):
         hl = QHBoxLayout(header)
         hl.setContentsMargins(16, 8, 16, 8)
         hl.setSpacing(8)
-        hl.addWidget(QLabel('<b>📊 预览 (Preview)</b>'))
+        hl.addWidget(QLabel('<b>预览 (Preview)</b>'))
         hl.addStretch()
         self.page_label = QLabel('')
         self.page_label.setObjectName('pageInfo')
@@ -161,7 +161,7 @@ class PreviewWidget(QWidget):
         <div style="display:flex;align-items:center;justify-content:center;
                     height:100%;min-height:400px;background:{bg};">
             <div style="text-align:center;color:{text};">
-                <div style="font-size:48px;margin-bottom:16px;">📑</div>
+                <div style="font-size:48px;margin-bottom:16px;color:{text};">P</div>
                 <div style="font-size:16px;font-weight:500;">生成 PPT 后在此预览</div>
                 <div style="font-size:13px;margin-top:8px;opacity:0.7;">
                     左侧将显示幻灯片缩略图<br>
@@ -271,7 +271,7 @@ class PreviewWidget(QWidget):
             f'<div style="background:{card_bg};border-radius:12px;padding:20px;'
             f'border:1px solid {border};box-shadow:0 1px 4px rgba(0,0,0,0.04);">',
             f'<div style="font-size:14px;font-weight:600;color:{muted_color};'
-            f'margin-bottom:12px;">📋 要点</div>',
+            f'margin-bottom:12px;">要点</div>',
         ]
 
         # 要点列表
@@ -313,7 +313,7 @@ class PreviewWidget(QWidget):
             html_parts.append(
                 f'<div style="border-top:1px solid {border};padding-top:12px;margin-top:12px;">'
                 f'<div style="font-size:12px;font-weight:600;color:{muted_color};'
-                f'margin-bottom:6px;">💬 备注</div>'
+                f'margin-bottom:6px;">备注</div>'
                 f'<div style="font-size:13px;color:{muted_color};font-style:italic;">'
                 f'{slide.notes}</div></div>'
             )
@@ -324,7 +324,7 @@ class PreviewWidget(QWidget):
             html_parts.append(
                 f'<div style="margin-top:16px;text-align:center;">'
                 f'<div style="font-size:12px;font-weight:600;color:{muted_color};'
-                f'margin-bottom:8px;">🖼️ 插图</div>'
+                f'margin-bottom:8px;">插图</div>'
                 f'<img src="data:image/png;base64,{img_b64}" '
                 f'style="max-width:100%;max-height:280px;border-radius:8px;'
                 f'border:1px solid {border};box-shadow:0 2px 8px rgba(0,0,0,0.1);"/>'

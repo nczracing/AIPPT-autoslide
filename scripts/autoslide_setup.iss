@@ -22,7 +22,7 @@ SetupIconFile=E:\life\study\projects\autos\autoslide\resources\icons\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 VersionInfoCopyright=Copyright (c) 2026 NCZ Racing
-LicenseFile=E:\study\projects\autoslide\LICENSE
+LicenseFile=E:\life\study\projects\autos\autoslide\LICENSE
 Compression=lzma2/max
 SolidCompression=yes
 PrivilegesRequired=lowest
@@ -41,7 +41,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; 关键修复：onedir 模式必须递归打包整个 dist\AutoSlide\ 目录（含 _internal 依赖）。
 ; 旧版只复制单个 exe（onefile 时代的写法），会导致安装后缺少依赖而无法启动。
-Source: "E:\study\projects\autoslide\dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\life\study\projects\autos\autoslide\dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
         self.current_theme = theme_mode
 
         # 更新按钮文字
-        self.theme_btn.setText('☀️ 浅色' if theme_mode == 'dark' else '🌙 深色')
+        self.theme_btn.setText('浅色' if theme_mode == 'dark' else '深色')
 
         # 重新应用主题（apply_theme 已处理调色板和QSS）
         apply_theme(QApplication.instance(), theme_mode)
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         tl.addWidget(QLabel('AutoSlide · AI PPT 生成器'))
         tl.addStretch()
         # 主题切换按钮
-        self.theme_btn = QPushButton('🌙 深色')
+        self.theme_btn = QPushButton('深色')
         self.theme_btn.setCursor(self.theme_btn.cursor())
         self.theme_btn.clicked.connect(self.toggle_theme)
         tl.addWidget(self.theme_btn)
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
         self.settings.save_ui_config({'theme': new_theme})
         self.current_theme = new_theme
         # 更新按钮文字
-        self.theme_btn.setText('☀️ 浅色' if new_theme == 'dark' else '🌙 深色')
+        self.theme_btn.setText('浅色' if new_theme == 'dark' else '深色')
         # 重新应用主题
         apply_theme(QApplication.instance(), new_theme)
         self.statusBar().showMessage(f'已切换到{"深色" if new_theme == "dark" else "浅色"}模式')

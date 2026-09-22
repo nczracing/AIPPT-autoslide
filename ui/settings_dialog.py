@@ -236,7 +236,7 @@ class SettingsDialog(QDialog):
             QMessageBox.information(
                 self,
                 '保存成功',
-                f'✅ 配置已保存！\n\n下次启动时会自动加载。\n\n配置文件位置：\n{self.settings.get_config_path()}'
+                f'配置已保存！\n\n下次启动时会自动加载。\n\n配置文件位置：\n{self.settings.get_config_path()}'
             )
             self.accept()
         else:
@@ -262,6 +262,6 @@ class SettingsDialog(QDialog):
         try:
             client = AIClient()
             resp = client.chat([{'role': 'user', 'content': 'Hi'}], max_tokens=10)
-            QMessageBox.information(self, '连接成功', f'✅ API连接正常！\n\n响应摘要:\n{resp[:100]}')
+            QMessageBox.information(self, '连接成功', f'API连接正常！\n\n响应摘要:\n{resp[:100]}')
         except Exception as e:
-            QMessageBox.critical(self, '连接失败', f'❌ API连接异常：\n{str(e)}')
+            QMessageBox.critical(self, '连接失败', f'API连接异常：\n{str(e)}')

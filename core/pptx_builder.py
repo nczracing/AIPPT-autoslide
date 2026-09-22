@@ -1419,11 +1419,26 @@ class PPTXBuilder:
             # 多栏：在文字区内均分，栏间距 0.4"
             col_gap = 0.4
             col_w = (region[2] - col_gap * (n - 1)) / n
+            # 稀疏内容垂直居中（F-03）：按每栏实际内容高度估算，远小于
+            # 文字区时整体居中，消除底部空白；高度留 0.35" 余量防触发缩放
+            registry = [e for e in self._content_registry if e.get("box") is not None]
+            est_heights = [
+                self._estimate_body_height(
+                    e.get("detail"), e.get("points"), col_w - 0.3, 1.0,
+                )
+                for e in registry
+            ] or [0.0]
+            est_h = max(est_heights)
+            box_top, box_h = region[1], region[3]
+            if est_h > 0.5 and est_h < region[3] - 0.9:
+                new_h = min(region[3], est_h + 0.35)
+                box_top = region[1] + (region[3] - new_h) / 2
+                box_h = new_h
             for i, b in enumerate(target_boxes):
                 b.left = Inches(region[0] + i * (col_w + col_gap))
-                b.top = Inches(region[1])
+                b.top = Inches(box_top)
                 b.width = Inches(col_w)
-                b.height = Inches(region[3])
+                b.height = Inches(box_h)
                 b.text_frame.word_wrap = True
 
     # ==================================================================

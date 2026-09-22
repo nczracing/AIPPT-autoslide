@@ -80,7 +80,11 @@ def _parse_pdf(path: Path) -> str:
             pages.append(f"[第{i}页]\n{page_text}")
 
     if not pages:
-        raise ValueError("PDF 无可提取文本（可能是扫描件）")
+        raise ValueError(
+            "PDF 无可提取文本（可能是扫描件）。"
+            "建议先用 OCR 工具预处理（如 OCRmyPDF、Adobe Acrobat 的 OCR 功能）"
+            "再上传，或直接提供 .md / 可复制文本的 PDF。"
+        )
 
     return "\n\n".join(pages)
 
@@ -110,10 +114,9 @@ def _clean_markdown(text: str) -> str:
     cleaned = []
     in_code_block = False
     for line in lines:
-        # 代码块围栏
+        # 代码块围栏：跳过 fence 行（```lang / ```），保留代码内容（F-06）
         if line.strip().startswith("```"):
             in_code_block = not in_code_block
-            cleaned.append(line.strip("`").strip())
             continue
 
         if in_code_block:

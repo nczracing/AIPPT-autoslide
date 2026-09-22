@@ -144,7 +144,11 @@ Output complete content in JSON format."""
         if not ctx:
             return ""
         if len(ctx) > PromptBuilder.MAX_CONTEXT_CHARS:
-            ctx = ctx[: PromptBuilder.MAX_CONTEXT_CHARS] + "\n...(参考材料过长，已截断)..."
+            # 截断时保留每个「=== 来源: xxx ===」标注，让 AI 知道材料来自哪些
+            # 文件；只在最后一个来源标注之后截断，避免来源信息被切没
+            omitted = len(ctx) - PromptBuilder.MAX_CONTEXT_CHARS
+            ctx = PromptBuilder._truncate_context(ctx, PromptBuilder.MAX_CONTEXT_CHARS)
+            ctx += f"\n...(参考材料过长，已省略后 {omitted} 字符)..."
         return (
             "Background reference material provided by the user "
             "(helps understand the intended content of this presentation):\n"
@@ -166,6 +170,24 @@ Output complete content in JSON format."""
             "(use the 'references' field for formal citations). Skip portions that "
             "are irrelevant to the topic."
         )
+
+    @staticmethod
+    def _truncate_context(ctx: str, limit: int) -> str:
+        """按 limit 截断 context，保留每个「=== 来源: xxx ===」标注。
+
+        实现：定位所有来源标注的结束位置；若截断点 limit 落在某个标注中间
+        或两个标注之间，对齐到「最后一个不超过 limit 的标注末尾」，保证
+        标注本身不被切没（可能超出 limit 最多一条标注的长度）。
+        """
+        import re
+        markers = [m.end() for m in re.finditer(r"=== 来源: .+? ===\n?", ctx)]
+        if not markers:
+            return ctx[:limit]
+        kept = [m for m in markers if m <= limit]
+        if kept:
+            return ctx[: kept[-1]]
+        # limit 在第一个标注之前：保留第一个完整标注
+        return ctx[: markers[0]]
 
     def build_content_prompt(self, outline: dict) -> str:
         """构建内容扩写Prompt"""
