@@ -1,11 +1,16 @@
 ; AutoSlide 安装脚本 (Inno Setup 6)
 ; 生成单文件安装包 AutoSlide-Setup.exe
-; 注意：请在项目根目录运行 `ISCC.exe autoslide_setup.iss`（相对路径 Source/OutputDir 依赖此前提）
+; 注意：本脚本全部使用 __DIR__ 相对路径（脚本所在目录 scripts/ 的上级为项目根），
+;       项目迁移/改名不再需要改动本文件。请在 scripts/ 目录或其任意位置运行：
+;       "C:/Users/NCZ Racing/InnoSetup6/ISCC.exe" E:/.../autoslide/scripts/autoslide_setup.iss
+;       （Inno Setup 自动按脚本自身位置解析 __DIR__，与工作目录无关）
 
 #define MyAppName "AutoSlide"
 #define MyAppVersion "1.1"
 #define MyAppPublisher "NCZ Racing"
 #define MyAppExeName "AutoSlide.exe"
+; 项目根目录 = 本脚本所在目录(scripts/)的上一级
+#define ProjectRoot __DIR__ + "..\"
 
 [Setup]
 AppId={{B7C3E5A1-9D4F-4E2B-8A6C-1F3E7D9B2C4A}
@@ -16,13 +21,13 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=E:\life\study\projects\autos\autoslide\installer
+OutputDir={#ProjectRoot}installer
 OutputBaseFilename=AutoSlide-Setup
-SetupIconFile=E:\life\study\projects\autos\autoslide\resources\icons\app.ico
+SetupIconFile={#ProjectRoot}resources\icons\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 VersionInfoCopyright=Copyright (c) 2026 NCZ Racing
-LicenseFile=E:\life\study\projects\autos\autoslide\LICENSE
+LicenseFile={#ProjectRoot}LICENSE
 Compression=lzma2/max
 SolidCompression=yes
 PrivilegesRequired=lowest
@@ -41,7 +46,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; 关键修复：onedir 模式必须递归打包整个 dist\AutoSlide\ 目录（含 _internal 依赖）。
 ; 旧版只复制单个 exe（onefile 时代的写法），会导致安装后缺少依赖而无法启动。
-Source: "E:\life\study\projects\autos\autoslide\dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 路径用 __DIR__ 相对定位，项目迁移无需改动本行。
+Source: "{#ProjectRoot}dist\{#MyAppName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
