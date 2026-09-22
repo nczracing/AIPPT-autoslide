@@ -45,6 +45,9 @@ config/settings.json
 *.log
 logs/
 
+# 含硬编码凭据的一次性脚本（禁提交，防 GitHub push protection 拦截）
+_create_issue*.py
+
 # 临时文件
 *.tmp
 temp/

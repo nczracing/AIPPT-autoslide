@@ -306,6 +306,51 @@ def verify_sparse_balance(tmpdir, imgs):
             )
 
 
+def verify_two_column_center(tmpdir, imgs):
+    """V9: 双栏（two_content）稀疏内容垂直居中几何验证（issue #7）。
+
+    双栏下左右两个正文框应：
+    - top 相同（同一水平线，整体居中）
+    - top 明显大于文字区顶部 region[1]（被下移居中，不再贴顶）
+    - 不越过文字区底部
+    镜像 _adjust_textbox_for_image 多栏分支的居中逻辑：
+    est_h < region[3]-0.9 时 new_h = min(region[3], est_h+0.35)，
+    box_top = region[1] + (region[3]-new_h)/2。
+    """
+    from pptx import Presentation as PptxPresentation
+    from settings_module import Presentation as Pres, Slide
+    builder = PPTXBuilder()
+    p = Pres(title="双栏居中", theme="business", language="zh")
+    p.add_slide(Slide(page=1, title="双栏稀疏页",
+                      points=["要点一", "要点二"],
+                      detail="", layout="two_content",
+                      image_path=imgs["square"], image_layout="right"))
+    out = os.path.join(tmpdir, "two_sparse_center.pptx")
+    builder.build(p, out)
+    prs = PptxPresentation(out)
+    body_tops = []
+    for slide_obj in prs.slides:
+        for shape in slide_obj.shapes:
+            if shape.has_text_frame and "要点" in shape.text_frame.text:
+                body_tops.append(shape.top.inches)
+    # 双栏应有两个正文框
+    if len(body_tops) < 2:
+        FAILURES.append(f"[two_sparse] V9 未找到双栏正文框: tops={body_tops}")
+        return
+    first, second = body_tops[0], body_tops[1]
+    # 两栏 top 应一致（同一水平线）
+    if abs(first - second) > 0.05:
+        FAILURES.append(
+            f"[two_sparse] V9 双栏 top 不一致: {first:.3f} vs {second:.3f}"
+        )
+    # 稀疏时正文应被下移居中（不再贴顶 1.45" 标题区下方）
+    # 双栏文字区 region[1] 约 1.5"，若居中生效 top 应 > 1.8"
+    if first < 1.8:
+        FAILURES.append(
+            f"[two_sparse] V9 双栏稀疏正文未垂直居中: top={first:.3f}（期望 >1.8）"
+        )
+
+
 def verify_no_crop_band(tmpdir, imgs):
     """V8: 零裁剪——图片比例精确匹配横幅框比例时（生成端正常出图的情形），
     图片必须原比例完整显示：crop 全 0 + 横幅保持标准高度 +
@@ -417,6 +462,7 @@ def main():
 
     verify_cover_crop(tmpdir, imgs)
     verify_sparse_balance(tmpdir, imgs)
+    verify_two_column_center(tmpdir, imgs)
     verify_no_crop_band(tmpdir, imgs)
 
     print("=" * 60)
